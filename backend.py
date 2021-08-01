@@ -4,6 +4,7 @@ import torch.nn.functional as functional
 import torch.optim as optim
 from torch.autograd import Variable
 from random import sample
+import os
 
 class Network(nn.Module):
     def __init__(self,nb_inputs,nb_actions):
@@ -75,3 +76,18 @@ class Brain():
     def score(self):
         mean = sum(self.reward_mean)/(len(self.reward_mean) + 1.0)
         return mean
+    
+    def save(self):
+        torch.save({'state_dict': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict
+                    },'recent_brain.pth')
+    
+    def load(self):
+        if os.path.isfile('recent_brain.pth'):
+            print('---Loading checkpoint---')
+            checkpoint = torch.load('recent_brain.pth')
+            self.model.load_state_dict(checkpoint['state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer'])    
+            print('Model successfully loaded!')
+        else:
+            print('There isn\'t an instance of a saved model!')

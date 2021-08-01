@@ -6,7 +6,6 @@ from torch.autograd import Variable
 from random import sample
 
 class Network(nn.Module):
-    
     def __init__(self,nb_inputs,nb_actions):
         super(Network,self).__init__()
         self.nb_inputs = nb_inputs
@@ -57,3 +56,22 @@ class Brain():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+    
+    def update(self,prev_reward,current_state):
+        new_state = torch.Tensor(current_state).float().unsqueeze(0)
+        self.memory.push((self.last_state,new_state,torch.LongTensor([int(self.last_action)]),torch.Tensor([self.last_reward])))
+        action = self.select_action(new_state)
+        if len(self.memory.memory) > 100:
+            train_last_state,train_next_state,train_last_action,train_last_reward = self.memory.pull(100)
+            self.learn(train_last_state,train_next_state,train_last_action,train_last_reward)
+        self.last_state = new_state
+        self.last_action = action
+        self.last_reward = prev_reward
+        self.reward_mean.append(prev_reward)
+        if len(self.reward_mean) > 1000:
+            del self.reward_mean[0]
+        return action
+    
+    def score(self):
+        mean = sum(self.reward_mean)/(len(self.reward_mean) + 1.0)
+        return mean
